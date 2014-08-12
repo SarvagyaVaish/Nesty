@@ -1,3 +1,6 @@
+var KNOB_MIN = 65;
+var KNOB_MAX = 80;
+
 var ThermostatUI = (function () {
 
 	var m_Online = false;
@@ -6,31 +9,43 @@ var ThermostatUI = (function () {
 
 	var m_ConfirmationTime = 2500; // msec
 	var m_ConfirmationTimerStart = null;
+	
+	var m_ThermostatKnobProperties = {
+		'min'			: KNOB_MIN,
+		'max'			: KNOB_MAX,
+		'angleOffset'	: -125,
+		'angleArc'		: 250, 
+		'lineCap'		: 'round' 
+	};
+
+	var m_ConfirmationKnobProperties = {
+		'min'			: KNOB_MIN,
+		'max'			: KNOB_MAX,
+		'angleOffset'	: -125,
+		'angleArc'		: 250, 
+		'lineCap'		: 'round',
+		'fgColor' 		: '#66CC66',
+		'bgColor'		: '#FFFFFF',
+		'displayInput'	: false,
+		'readOnly'		: true
+	};
 
 	return {
 
 		// Initialize a knob in disabled state
 		Init: function () {
+			$("#thermostat-knob").knob(m_ThermostatKnobProperties);
+			$("#confirmation-knob").knob(m_ConfirmationKnobProperties);
 			ThermostatUI.VisualizeDisabled();
 		}, // Init
 
 
 		VisualizeDisabled: function() {
-			$("#thermostat-knob").knob({
-				'min' : 65,
-				'max' : 80, 
-				'angleOffset' : -125,
-				'angleArc' : 250, 
-				'lineCap' : 'round',
-				'fgColor' : '#CDCDCD',
-				'inputColor' : '#CDCDCD', 
-				'readOnly' : true
-			});
-
-			// Set disabled state
-			$("#thermostat-knob").val(80).trigger('change');
+			// Set values to minimum
+			$("#thermostat-knob").val(KNOB_MIN).trigger('change');
 			$("#thermostat-knob").val('-');
-		},
+			$("#confirmation-knob").val(KNOB_MIN).trigger('change');
+		}, // VisualizeDisabled
 
 
 		VisualizeCurrentTemp: function () {
@@ -44,17 +59,10 @@ var ThermostatUI = (function () {
 				return;
 			}
 
-			$("#thermostat-knob").knob({
-				'min' : 65,
-				'max' : 80, 
-				'angleOffset' : -125,
-				'angleArc' : 250, 
-				'lineCap' : 'round'
-			});
-
-			// Set disabled state
 			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
-		}, // Set Current Temp
+			$("#confirmation-knob").val(KNOB_MIN).trigger('change');
+
+		}, // VisualizeCurrentTemp
 
 
 		SetOnline: function(online) {
