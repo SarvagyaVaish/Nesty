@@ -7,6 +7,12 @@ var ThermostatUI = (function () {
 	var m_CurrentTemp = null;
 	var m_DesiredTemp = null;
 
+	var ConfirmationKnobModes = {
+		Disabled: 0,
+		Ready: 1,
+		Increasing: 2
+	};
+	var m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 	var m_ConfirmationTime = 2000.0; // msec
 	var m_ConfirmationKnobValue = null;
 	var m_ConfirmationIntervalId = null;
@@ -14,6 +20,7 @@ var ThermostatUI = (function () {
 	var CompleteConfirmation = function() {
 		console.log('CompleteConfirmation');
 		
+		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		clearInterval(m_ConfirmationIntervalId);
 		$("#confirmation-knob").val(0).trigger('change');
 	};
@@ -21,22 +28,29 @@ var ThermostatUI = (function () {
 	var InterruptConfirmation = function() {
 		console.log('InterruptConfirmation');
 		
+		// Stop Confirmation Knob from increasing
 		clearInterval(m_ConfirmationIntervalId);
+
+		// Change Confirmation Knob color to red and fill it all the way
 		$("#confirmation-knob").trigger('configure', {
 			"fgColor":"#FF0000"
 		});
 		$("#confirmation-knob").val(100).trigger('change');
+
+		// Change Confirmation Knob color to default and earse it after a brief pause
 		setTimeout(function(){
 			$("#confirmation-knob").trigger('configure', {
 				"fgColor":"#66CC66"
 			});
 			$("#confirmation-knob").val(0).trigger('change');
+			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		}, 500);
 	};
 
 	var IncrementConfirmationKnob = function() {
 		console.log('IncrementConfirmationKnob');
 
+		m_ConfirmationKnobMode = ConfirmationKnobModes.Increasing;
 		m_ConfirmationKnobValue += 1;
 		$("#confirmation-knob").val(m_ConfirmationKnobValue).trigger('change');
 		if (m_ConfirmationKnobValue > 100) {
@@ -45,17 +59,36 @@ var ThermostatUI = (function () {
 	};
 
 	var StartConfirmation = function() {
-		// Dont start if release was triggered but thermostat is offline
-		if (!m_Online) {
-			return;
-		}
-		console.log('StartConfirmation');
-
+		// Reset confirmation knob value and clear previous intervals
 		m_ConfirmationKnobValue = 0;
 		clearInterval(m_ConfirmationIntervalId);
+
+		// Start the confirmation knob after a brief pause
 		setTimeout(function(){
 			m_ConfirmationIntervalId = setInterval(IncrementConfirmationKnob, m_ConfirmationTime/100.0);
 		}, 500);
+	};
+
+	var ThermostatKnobReleaseHook = function(){
+		// Don't StartConfirmation if Offline
+		if (!m_Online) {
+			console.log("ERROR: Not Online. Cannot StartConfirmation.");
+			return;
+		}
+
+		// Don't StartConfirmation if ConfirmationKnob is disabled
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
+			console.log("ERROR: Confirmation Knob not enabled. Cannot StartConfirmation.");
+			return;	
+		}
+
+		StartConfirmation();
+	};
+
+	var ThermostatKnobChangeHook = function(){
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Increasing) {
+			InterruptConfirmation();
+		}
 	};
 
 	var m_ThermostatKnobProperties = {
@@ -66,7 +99,8 @@ var ThermostatUI = (function () {
 		'angleArc'		: 250, 
 		'lineCap'		: 'round',
 		// Hooks
-		'release'		: StartConfirmation
+		'release'		: ThermostatKnobReleaseHook,
+		'change'		: ThermostatKnobChangeHook
 	};
 
 	var m_ConfirmationKnobProperties = {
@@ -83,6 +117,11 @@ var ThermostatUI = (function () {
 	};
 
 	return {
+		// Enable / disable confirmation knob
+		SetConfirmationKnobReady: function() {
+			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
+		},
+
 
 		// Initialize a knob in disabled state
 		Init: function () {
