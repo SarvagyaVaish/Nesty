@@ -18,7 +18,7 @@ var ThermostatUI = (function () {
 	var m_ConfirmationIntervalId = null;
 
 	var CompleteConfirmation = function() {
-		console.log('CompleteConfirmation');
+		DebugLog('[CompleteConfirmation]');
 		
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		clearInterval(m_ConfirmationIntervalId);
@@ -26,7 +26,7 @@ var ThermostatUI = (function () {
 	};
 
 	var InterruptConfirmation = function() {
-		console.log('InterruptConfirmation');
+		DebugLog('[InterruptConfirmation]');
 		
 		// Stop Confirmation Knob from increasing
 		clearInterval(m_ConfirmationIntervalId);
@@ -48,7 +48,7 @@ var ThermostatUI = (function () {
 	};
 
 	var IncrementConfirmationKnob = function() {
-		console.log('IncrementConfirmationKnob');
+		DebugLog('[IncrementConfirmationKnob]');
 
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Increasing;
 		m_ConfirmationKnobValue += 1;
@@ -72,13 +72,13 @@ var ThermostatUI = (function () {
 	var ThermostatKnobReleaseHook = function(){
 		// Don't StartConfirmation if Offline
 		if (!m_Online) {
-			console.log("ERROR: Not Online. Cannot StartConfirmation.");
+			DebugLog("[ThermostatKnobReleaseHook] Not Online. Cannot StartConfirmation.");
 			return;
 		}
 
 		// Don't StartConfirmation if ConfirmationKnob is disabled
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			console.log("ERROR: Confirmation Knob not enabled. Cannot StartConfirmation.");
+			DebugLog("[ThermostatKnobReleaseHook] Confirmation Knob not enabled. Cannot StartConfirmation.");
 			return;	
 		}
 
@@ -141,12 +141,12 @@ var ThermostatUI = (function () {
 
 		VisualizeCurrentTemp: function () {
 			if (!m_Online) {
-				console.log("ERROR: Not Online. Cannot visualize.");
+				DebugLog("[VisualizeCurrentTemp] Not Online. Cannot visualize.");
 				return;
 			}
 
 			if (!m_CurrentTemp) {
-				console.log("ERROR: Current Temp not set. Cannot visualize.");
+				DebugLog("[VisualizeCurrentTemp] Current Temp not set. Cannot visualize.");
 				return;
 			}
 
