@@ -6,8 +6,10 @@
 		<script src="https://www.dropbox.com/static/api/dropbox-datastores-1.1-latest.js"></script>
 		<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 		<script src="lib/jquery.knob.js"></script>
+		<script src="https://hammerjs.github.io/dist/hammer.js"></script>
 		
 		<script src="Credentials.js"></script>
+		<script src="CommonMethods.js"></script>
 		<script src="Nesty.js"></script>
 		<script src="DropboxDB.js"></script>
 		<script src="ThermostatUI.js"></script>
@@ -18,7 +20,7 @@
 
 	<body>
 
-		<div style="position:relative;width:350px;margin:auto">
+		<div id="tap-area" style="position:relative;width:350px;margin:auto">
 		
 			<div style="position:absolute; left:10px; top:10px">
 				<input id="thermostat-knob" data-width="300" data-height="300" data-thickness=".3">
