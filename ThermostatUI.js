@@ -7,6 +7,12 @@ var ThermostatUI = (function () {
 	var m_CurrentTemp = null;
 	var m_DesiredTemp = null;
 
+	var ThermostatKnobModes = {
+		DisplayingCurrentTemp: 0,
+		DisplayingDesiredTemp: 1
+	};
+	var m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
+
 	var ConfirmationKnobModes = {
 		Disabled: 0,
 		Ready: 1,
@@ -117,12 +123,6 @@ var ThermostatUI = (function () {
 	};
 
 	return {
-		// Enable / disable confirmation knob
-		SetConfirmationKnobReady: function() {
-			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
-		},
-
-
 		// Initialize a knob in disabled state
 		Init: function () {
 			$("#thermostat-knob").knob(m_ThermostatKnobProperties);
@@ -151,27 +151,71 @@ var ThermostatUI = (function () {
 			}
 
 			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
-			$("#confirmation-knob").val(0).trigger('change');
 
 		}, // VisualizeCurrentTemp
+
+
+		VisualizeDesiredTemp: function () {
+			if (!m_Online) {
+				DebugLog("[VisualizeDesiredTemp] Not Online. Cannot visualize.");
+				return;
+			}
+
+			if (!m_DesiredTemp) {
+				DebugLog("[VisualizeDesiredTemp] Desired Temp not set. Cannot visualize.");
+				return;
+			}
+
+			$("#thermostat-knob").val(m_DesiredTemp).trigger('change');
+
+		}, // VisualizeDesiredTemp
 
 
 		SetOnline: function(online) {
 			m_Online = online;
 
-			if (!m_Online) {
-				ThermostatUI.VisualizeDisabled();
-			}
-			else {
+			//if (!m_Online) {
+			//	ThermostatUI.VisualizeDisabled();
+			//}
+			//else {
+			//	ThermostatUI.VisualizeCurrentTemp();
+			//}
+		},
+
+
+		SetCurrentTemp: function(temp) {
+			m_CurrentTemp = temp;
+			//ThermostatUI.VisualizeCurrentTemp();
+		},
+
+
+		SetDesiredTemp: function(temp) {
+			m_DesiredTemp = temp;
+			//ThermostatUI.VisualizeDesiredTemp();
+		},
+
+
+		// Set Thermostat Knob mode
+		SetThermostatMode: function(mode) {
+			if (mode == "current-temp") {
+				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
+				m_ThermostatKnobProperties.readOnly = true;
+				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties);
 				ThermostatUI.VisualizeCurrentTemp();
 			}
+			else if (mode == "desired-temp") {
+				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingDesiredTemp;
+				m_ThermostatKnobProperties.readOnly = false;
+				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties);
+				ThermostatUI.VisualizeDesiredTemp();
+			}
 		},
 
 
-		SetCurrentTemp: function(currentTemp) {
-			m_CurrentTemp = currentTemp;
-			ThermostatUI.VisualizeCurrentTemp();
-		},
+		// Enable / disable confirmation knob
+		SetConfirmationKnobReady: function() {
+			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
+		}
 
 	}; // Return
 

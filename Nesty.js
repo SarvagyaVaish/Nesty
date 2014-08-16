@@ -17,6 +17,10 @@ $(function () {
 	var mc = new Hammer(tapArea);
 	mc.on("tap", function(ev) {
 		console.log('gesture detected.');
+		ThermostatUI.SetThermostatMode("desired-temp");
+		setTimeout(function(){
+			ThermostatUI.SetThermostatMode("current-temp");
+		}, 5000);
 	});
 
 
@@ -29,7 +33,6 @@ $(function () {
 			if (Date.now() - Date.parse(lastHeardTime) < 20000) {
 				DebugLog("[IsCoreOnlineSuccess] Core Online.");
 				ThermostatUI.SetOnline(true);
-				ThermostatUI.SetCurrentTemp(70);
 				ThermostatUI.SetConfirmationKnobReady();
 			}
 			else {
@@ -54,7 +57,45 @@ $(function () {
 				IsCoreOnlineSuccess(data);
 			},
 			error: function(){
-				ErrorLog("[IsCoreOnline] Api call to check device status failed.");
+				ErrorLog("[IsCoreOnline] Api call failed.");
+			}
+		});
+
+	};
+
+	function GetCurrentTemperature() {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'CurrTemp' ;
+		$.ajax({
+			type: 'GET',
+			url: url,
+			data: { access_token: SPARK_ACCESS_TOKEN },
+			dataType: 'json',
+			success: function(data){
+				var temp = data.result;
+				ThermostatUI.SetCurrentTemp(temp);
+				console.log("Current temp: " + temp);
+			},
+			error: function(){
+				ErrorLog("[GetCurrentTemperature] Api call failed.");
+			}
+		});
+
+	};
+
+	function GetDesiredTemperature() {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'DesrTemp' ;
+		$.ajax({
+			type: 'GET',
+			url: url,
+			data: { access_token: SPARK_ACCESS_TOKEN },
+			dataType: 'json',
+			success: function(data){
+				var temp = data.result;
+				ThermostatUI.SetDesiredTemp(temp);
+				console.log("Desired temp: " + temp);
+			},
+			error: function(){
+				ErrorLog("[GetDesiredTemperature] Api call failed.");
 			}
 		});
 
@@ -80,5 +121,10 @@ $(function () {
 			onMethodFailure();
 		});
 	};
+
+
+	GetCurrentTemperature();
+	GetDesiredTemperature();
+	ThermostatUI.SetThermostatMode("current-temp");
 
 });
