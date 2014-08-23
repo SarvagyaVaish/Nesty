@@ -12,6 +12,7 @@ var ThermostatUI = (function () {
 		DisplayingDesiredTemp: 1
 	};
 	var m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
+	var m_DesiredTempTimeoutId = null;
 
 	var ConfirmationKnobModes = {
 		Disabled: 0,
@@ -24,14 +25,21 @@ var ThermostatUI = (function () {
 	var m_ConfirmationIntervalId = null;
 
 	var CompleteConfirmation = function() {
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
+			ResetConfirmationKnob();
+		}
+
 		DebugLog('[CompleteConfirmation]');
 		
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
-		clearInterval(m_ConfirmationIntervalId);
-		$("#confirmation-knob").val(0).trigger('change');
+		ResetConfirmationKnob();
 	};
 
 	var InterruptConfirmation = function() {
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
+			ResetConfirmationKnob();
+		}
+
 		DebugLog('[InterruptConfirmation]');
 		
 		// Stop Confirmation Knob from increasing
@@ -43,17 +51,19 @@ var ThermostatUI = (function () {
 		});
 		$("#confirmation-knob").val(100).trigger('change');
 
-		// Change Confirmation Knob color to default and earse it after a brief pause
+		// Change Confirmation Knob color to default and erase it after a brief pause
 		setTimeout(function(){
-			$("#confirmation-knob").trigger('configure', {
-				"fgColor":"#66CC66"
-			});
-			$("#confirmation-knob").val(0).trigger('change');
+			$("#confirmation-knob").trigger('configure', m_ConfirmationKnobProperties);
+			ResetConfirmationKnob();
 			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		}, 500);
 	};
 
 	var IncrementConfirmationKnob = function() {
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
+			ResetConfirmationKnob();
+		}
+
 		DebugLog('[IncrementConfirmationKnob]');
 
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Increasing;
@@ -65,6 +75,10 @@ var ThermostatUI = (function () {
 	};
 
 	var StartConfirmation = function() {
+		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
+			ResetConfirmationKnob();
+		}
+
 		// Reset confirmation knob value and clear previous intervals
 		m_ConfirmationKnobValue = 0;
 		clearInterval(m_ConfirmationIntervalId);
@@ -75,7 +89,13 @@ var ThermostatUI = (function () {
 		}, 500);
 	};
 
+	var NoOpHook = function() {
+		// No op
+	};
+
 	var ThermostatKnobReleaseHook = function(){
+		ResetDisplayingDesiredTempTimeout();
+
 		// Don't StartConfirmation if Offline
 		if (!m_Online) {
 			DebugLog("[ThermostatKnobReleaseHook] Not Online. Cannot StartConfirmation.");
@@ -92,21 +112,40 @@ var ThermostatUI = (function () {
 	};
 
 	var ThermostatKnobChangeHook = function(){
+		ResetDisplayingDesiredTempTimeout();
+		
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Increasing) {
 			InterruptConfirmation();
 		}
 	};
 
 	var m_ThermostatKnobProperties = {
-		// Properties
-		'min'			: KNOB_MIN,
-		'max'			: KNOB_MAX,
-		'angleOffset'	: -125,
-		'angleArc'		: 250, 
-		'lineCap'		: 'round',
-		// Hooks
-		'release'		: ThermostatKnobReleaseHook,
-		'change'		: ThermostatKnobChangeHook
+		DisplayingCurrentTemp : {
+			// Properties
+			'min'			: KNOB_MIN,
+			'max'			: KNOB_MAX,
+			'angleOffset'	: -125,
+			'angleArc'		: 250, 
+			'lineCap'		: 'round',
+			'fgColor' 		: '#999999',
+			'readOnly'		: true,
+			// Hooks
+			'release'		: NoOpHook,
+			'change'		: NoOpHook
+		},
+		DisplayingDesiredTemp : {
+			// Properties
+			'min'			: KNOB_MIN,
+			'max'			: KNOB_MAX,
+			'angleOffset'	: -125,
+			'angleArc'		: 250, 
+			'lineCap'		: 'round',
+			'fgColor' 		: '#5CD9F2',
+			'readOnly'		: false,
+			// Hooks
+			'release'		: ThermostatKnobReleaseHook,
+			'change'		: ThermostatKnobChangeHook
+		}
 	};
 
 	var m_ConfirmationKnobProperties = {
@@ -122,16 +161,35 @@ var ThermostatUI = (function () {
 		'readOnly'		: true
 	};
 
+	var ResetConfirmationKnob = function(){
+		m_ConfirmationKnobValue = 0;
+		clearInterval(m_ConfirmationIntervalId);
+		$("#confirmation-knob").val(m_ConfirmationKnobValue).trigger('change');
+	};
+
+	var ResetDisplayingDesiredTempTimeout = function(){
+		clearTimeout(m_DesiredTempTimeoutId);
+		m_DesiredTempTimeoutId = setTimeout(function(){
+			ThermostatUI.SetThermostatMode('current-temp');
+		}, 5000);
+	};
+
 	return {
 		// Initialize a knob in disabled state
 		Init: function () {
-			$("#thermostat-knob").knob(m_ThermostatKnobProperties);
+			$("#thermostat-knob").knob(m_ThermostatKnobProperties.DisplayingCurrentTemp);
 			$("#confirmation-knob").knob(m_ConfirmationKnobProperties);
 			ThermostatUI.VisualizeDisabled();
 		}, // Init
 
 
 		VisualizeDisabled: function() {
+			// Reset the confirmation knob
+			ResetConfirmationKnob();
+
+			// Disable the confirmation knob
+			m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
+
 			// Set values to minimum
 			$("#thermostat-knob").val(KNOB_MIN).trigger('change');
 			$("#thermostat-knob").val('-');
@@ -150,6 +208,7 @@ var ThermostatUI = (function () {
 				return;
 			}
 
+			// Display current temp on thermostat knob
 			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
 
 		}, // VisualizeCurrentTemp
@@ -173,48 +232,51 @@ var ThermostatUI = (function () {
 
 		SetOnline: function(online) {
 			m_Online = online;
-
-			//if (!m_Online) {
-			//	ThermostatUI.VisualizeDisabled();
-			//}
-			//else {
-			//	ThermostatUI.VisualizeCurrentTemp();
-			//}
 		},
 
 
 		SetCurrentTemp: function(temp) {
 			m_CurrentTemp = temp;
-			//ThermostatUI.VisualizeCurrentTemp();
 		},
 
 
 		SetDesiredTemp: function(temp) {
 			m_DesiredTemp = temp;
-			//ThermostatUI.VisualizeDesiredTemp();
 		},
 
 
 		// Set Thermostat Knob mode
 		SetThermostatMode: function(mode) {
+			
 			if (mode == "current-temp") {
+
+				// Reset the confirmation knob
+				ResetConfirmationKnob();
+
+				// Set modes
+				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
-				m_ThermostatKnobProperties.readOnly = true;
-				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties);
+
+				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingCurrentTemp);
 				ThermostatUI.VisualizeCurrentTemp();
 			}
 			else if (mode == "desired-temp") {
+
+				// Reset the confirmation knob
+				ResetConfirmationKnob();
+
+				// Thermostat Knob mode
 				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingDesiredTemp;
-				m_ThermostatKnobProperties.readOnly = false;
-				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties);
+
+				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingDesiredTemp);
 				ThermostatUI.VisualizeDesiredTemp();
+
+				// Confirmation Knob mode
+				m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
+
+				// Set up timer to go back to current temp after a while
+				ResetDisplayingDesiredTempTimeout();
 			}
-		},
-
-
-		// Enable / disable confirmation knob
-		SetConfirmationKnobReady: function() {
-			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		}
 
 	}; // Return

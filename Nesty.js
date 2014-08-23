@@ -12,15 +12,14 @@ $(function () {
 	IsCoreOnline();
 	setInterval(IsCoreOnline, 5000);
 
+	var firstSuccessfulConnectionFlag = true;
+
 	// HAMMER.JS
 	var tapArea = $('#tap-area')[0];
 	var mc = new Hammer(tapArea);
 	mc.on("tap", function(ev) {
 		console.log('gesture detected.');
 		ThermostatUI.SetThermostatMode("desired-temp");
-		setTimeout(function(){
-			ThermostatUI.SetThermostatMode("current-temp");
-		}, 5000);
 	});
 
 
@@ -33,7 +32,12 @@ $(function () {
 			if (Date.now() - Date.parse(lastHeardTime) < 20000) {
 				DebugLog("[IsCoreOnlineSuccess] Core Online.");
 				ThermostatUI.SetOnline(true);
-				ThermostatUI.SetConfirmationKnobReady();
+				if (firstSuccessfulConnectionFlag) {
+					GetCurrentTemperature();
+					GetDesiredTemperature();
+					ThermostatUI.SetThermostatMode("current-temp");
+				}
+				firstSuccessfulConnectionFlag = false;
 			}
 			else {
 				DebugLog("[IsCoreOnlineSuccess] Core Offline.");
@@ -123,8 +127,6 @@ $(function () {
 	};
 
 
-	GetCurrentTemperature();
-	GetDesiredTemperature();
-	ThermostatUI.SetThermostatMode("current-temp");
+	
 
 });
