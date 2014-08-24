@@ -33,7 +33,7 @@ var ThermostatUI = (function () {
 			return;
 		}
 		
-		DebugLog('[Complete Confirmation]');
+		DebugLog('[Complete Confirmation]', 3);
 		
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		ResetConfirmationKnob();
