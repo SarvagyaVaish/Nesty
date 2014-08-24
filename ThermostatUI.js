@@ -7,13 +7,16 @@ var ThermostatUI = (function () {
 	var m_CurrentTemp = null;
 	var m_DesiredTemp = null;
 
+	var m_DesiredTempTimeoutId = null;
+
+	// Thermostat Knob
 	var ThermostatKnobModes = {
 		DisplayingCurrentTemp: 0,
 		DisplayingDesiredTemp: 1
 	};
 	var m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
-	var m_DesiredTempTimeoutId = null;
 
+	// Confirmation Knob
 	var ConfirmationKnobModes = {
 		Disabled: 0,
 		Ready: 1,
@@ -26,10 +29,11 @@ var ThermostatUI = (function () {
 
 	var CompleteConfirmation = function() {
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			ResetConfirmationKnob();
+			DebugLog("[Complete Confirmation] Confirmation Knob mode == Disabled", 2);
+			return;
 		}
-
-		DebugLog('[CompleteConfirmation]');
+		
+		DebugLog('[Complete Confirmation]');
 		
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		ResetConfirmationKnob();
@@ -37,13 +41,15 @@ var ThermostatUI = (function () {
 
 	var InterruptConfirmation = function() {
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			ResetConfirmationKnob();
+			DebugLog("[Interrupt Confirmation] Confirmation Knob mode == Disabled", 2);
+			return;
 		}
-
-		DebugLog('[InterruptConfirmation]');
 		
+		DebugLog('[Interrupt Confirmation]', 3);
+
 		// Stop Confirmation Knob from increasing
-		clearInterval(m_ConfirmationIntervalId);
+		ResetConfirmationKnob();
+		m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 
 		// Change Confirmation Knob color to red and fill it all the way
 		$("#confirmation-knob").trigger('configure', {
@@ -51,22 +57,29 @@ var ThermostatUI = (function () {
 		});
 		$("#confirmation-knob").val(100).trigger('change');
 
-		// Change Confirmation Knob color to default and erase it after a brief pause
+		// Change Confirmation Knob color to default and erase it after a brief pause (500 ms)
 		setTimeout(function(){
 			$("#confirmation-knob").trigger('configure', m_ConfirmationKnobProperties);
 			ResetConfirmationKnob();
 			m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		}, 500);
+
+		/*
+		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
+		*/
 	};
 
 	var IncrementConfirmationKnob = function() {
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			ResetConfirmationKnob();
+			DebugLog("[Increment Confirmation Knob] Confirmation Knob mode == Disabled", 2);
+			return;
 		}
 
-		DebugLog('[IncrementConfirmationKnob]');
+		if (m_ConfirmationKnobMode != ConfirmationKnobModes.Increasing) {
+			DebugLog("[Increment Confirmation Knob]", 3);
+			m_ConfirmationKnobMode = ConfirmationKnobModes.Increasing;
+		}
 
-		m_ConfirmationKnobMode = ConfirmationKnobModes.Increasing;
 		m_ConfirmationKnobValue += 1;
 		$("#confirmation-knob").val(m_ConfirmationKnobValue).trigger('change');
 		if (m_ConfirmationKnobValue > 100) {
@@ -76,16 +89,21 @@ var ThermostatUI = (function () {
 
 	var StartConfirmation = function() {
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			ResetConfirmationKnob();
+			DebugLog("[Start Confirmation] Confirmation Knob mode == Disabled", 2);
+			return;
 		}
+		DebugLog("[Start Confirmation]", 3);
+		
+		ResetConfirmationKnob();
 
 		// Reset confirmation knob value and clear previous intervals
 		m_ConfirmationKnobValue = 0;
-		clearInterval(m_ConfirmationIntervalId);
 
-		// Start the confirmation knob after a brief pause
+		// Start the confirmation knob after a brief pause (500 ms)
 		setTimeout(function(){
-			m_ConfirmationIntervalId = setInterval(IncrementConfirmationKnob, m_ConfirmationTime/100.0);
+			if (m_ConfirmationIntervalId == null) {
+				m_ConfirmationIntervalId = setInterval(IncrementConfirmationKnob, m_ConfirmationTime/100.0);
+			}
 		}, 500);
 	};
 
@@ -94,24 +112,16 @@ var ThermostatUI = (function () {
 	};
 
 	var ThermostatKnobReleaseHook = function(){
+		DebugLog("[Thermostat Knob Release Hook]", 3);
+
 		ResetDisplayingDesiredTempTimeout();
-
-		// Don't StartConfirmation if Offline
-		if (!m_Online) {
-			DebugLog("[ThermostatKnobReleaseHook] Not Online. Cannot StartConfirmation.");
-			return;
-		}
-
-		// Don't StartConfirmation if ConfirmationKnob is disabled
-		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Disabled) {
-			DebugLog("[ThermostatKnobReleaseHook] Confirmation Knob not enabled. Cannot StartConfirmation.");
-			return;	
-		}
 
 		StartConfirmation();
 	};
 
 	var ThermostatKnobChangeHook = function(){
+		DebugLog("[Thermostat Knob Change Hook]", 3);
+
 		ResetDisplayingDesiredTempTimeout();
 		
 		if (m_ConfirmationKnobMode == ConfirmationKnobModes.Increasing) {
@@ -162,14 +172,19 @@ var ThermostatUI = (function () {
 	};
 
 	var ResetConfirmationKnob = function(){
+		DebugLog("[Reset Confirmation Knob]", 3);
+
 		m_ConfirmationKnobValue = 0;
 		clearInterval(m_ConfirmationIntervalId);
+		m_ConfirmationIntervalId = null;
 		$("#confirmation-knob").val(m_ConfirmationKnobValue).trigger('change');
 	};
 
 	var ResetDisplayingDesiredTempTimeout = function(){
+		DebugLog("[Reset Displaying Desired Temp Timeout]", 3);
 		clearTimeout(m_DesiredTempTimeoutId);
 		m_DesiredTempTimeoutId = setTimeout(function(){
+			ResetConfirmationKnob();
 			ThermostatUI.SetThermostatMode('current-temp');
 		}, 5000);
 	};
@@ -184,6 +199,8 @@ var ThermostatUI = (function () {
 
 
 		VisualizeDisabled: function() {
+			DebugLog("[Visualize Disabled]", 3);
+
 			// Reset the confirmation knob
 			ResetConfirmationKnob();
 
@@ -199,16 +216,17 @@ var ThermostatUI = (function () {
 
 		VisualizeCurrentTemp: function () {
 			if (!m_Online) {
-				DebugLog("[VisualizeCurrentTemp] Not Online. Cannot visualize.");
+				DebugLog("[Visualize Current Temp] Not Online. Cannot visualize.", 2);
 				return;
 			}
 
 			if (!m_CurrentTemp) {
-				DebugLog("[VisualizeCurrentTemp] Current Temp not set. Cannot visualize.");
+				DebugLog("[Visualize Current Temp] Current Temp not set. Cannot visualize.", 2);
 				return;
 			}
 
-			// Display current temp on thermostat knob
+			// Display current temp
+			DebugLog("[Visualize Current Temp] Setting thermostat knob to " + m_CurrentTemp, 2);
 			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
 
 		}, // VisualizeCurrentTemp
@@ -216,38 +234,50 @@ var ThermostatUI = (function () {
 
 		VisualizeDesiredTemp: function () {
 			if (!m_Online) {
-				DebugLog("[VisualizeDesiredTemp] Not Online. Cannot visualize.");
+				DebugLog("[VisualizeDesiredTemp] Not Online. Cannot visualize.", 2);
 				return;
 			}
 
 			if (!m_DesiredTemp) {
-				DebugLog("[VisualizeDesiredTemp] Desired Temp not set. Cannot visualize.");
+				DebugLog("[VisualizeDesiredTemp] Desired Temp not set. Cannot visualize.", 2);
 				return;
 			}
 
+			// Display desired temp 
+			DebugLog("[Visualize Desired Temp] Setting thermostat knob to " + m_DesiredTemp, 2);
 			$("#thermostat-knob").val(m_DesiredTemp).trigger('change');
 
 		}, // VisualizeDesiredTemp
 
 
 		SetOnline: function(online) {
+			DebugLog("[Set Online]: " + online, 3);
 			m_Online = online;
 		},
 
 
+		GetOnline: function() {
+			DebugLog("[Get Online]: " + m_Online, 3);
+			return m_Online;
+		},
+
+
 		SetCurrentTemp: function(temp) {
+			DebugLog("[Set Current Temp]: " + temp, 3);
 			m_CurrentTemp = temp;
 		},
 
 
 		SetDesiredTemp: function(temp) {
+			DebugLog("[Set Desired Temp]: " + temp, 3);
 			m_DesiredTemp = temp;
 		},
 
 
 		// Set Thermostat Knob mode
 		SetThermostatMode: function(mode) {
-			
+			DebugLog("[Set Thermostat Mode]: " + mode, 3);
+
 			if (mode == "current-temp") {
 
 				// Reset the confirmation knob
@@ -257,6 +287,7 @@ var ThermostatUI = (function () {
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
 
+				// Init Thermostat Knob
 				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingCurrentTemp);
 				ThermostatUI.VisualizeCurrentTemp();
 			}
@@ -268,14 +299,25 @@ var ThermostatUI = (function () {
 				// Thermostat Knob mode
 				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingDesiredTemp;
 
+				// Init Thermostat Knob
 				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingDesiredTemp);
 				ThermostatUI.VisualizeDesiredTemp();
 
 				// Confirmation Knob mode
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 
-				// Set up timer to go back to current temp after a while
+				// Set up timer to display current temperature 
 				ResetDisplayingDesiredTempTimeout();
+			}
+		},
+
+
+		GetThermostatMode: function(mode) {
+			if (m_ThermostatKnobMode == ThermostatKnobModes.DisplayingCurrentTemp) {
+				return 'current-temp';
+			}
+			if (m_ThermostatKnobMode == ThermostatKnobModes.DisplayingDesiredTemp) {
+				return 'desired-temp';
 			}
 		}
 

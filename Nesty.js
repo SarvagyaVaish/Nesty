@@ -4,48 +4,61 @@ $(function () {
 
 	// Initialize Thermostat UI
 	ThermostatUI.Init();
-	ThermostatUI.VisualizeCurrentTemp();
 
 	// Initialize Dropbox Datastore
 	DropboxDB.Init();
 
+	// Set up ping to spark core (every 5 seconds)
 	IsCoreOnline();
 	setInterval(IsCoreOnline, 5000);
-
-	var firstSuccessfulConnectionFlag = true;
 
 	// HAMMER.JS
 	var tapArea = $('#tap-area')[0];
 	var mc = new Hammer(tapArea);
 	mc.on("tap", function(ev) {
-		console.log('gesture detected.');
-		ThermostatUI.SetThermostatMode("desired-temp");
+		if (ThermostatUI.GetThermostatMode() == 'current-temp') {
+			DebugLog('Tap gesture recognized.', 2);
+			ThermostatUI.SetThermostatMode("desired-temp");
+		}
 	});
 
-
-
-	function IsCoreOnlineSuccess(data) {
+	function CorePingSuccessful(data) {
 		var response = data[0]	;
 		if ('last_heard' in response) {
 			var lastHeardTime = response.last_heard;
 
-			if (Date.now() - Date.parse(lastHeardTime) < 20000) {
-				DebugLog("[IsCoreOnlineSuccess] Core Online.");
-				ThermostatUI.SetOnline(true);
-				if (firstSuccessfulConnectionFlag) {
+			/*
+			var d = new Date();
+			var n = d.toUTCString();
+			DebugLog(n);
+
+			var d2 = new Date(Date.parse(lastHeardTime));
+			var n2 = d2.toUTCString();
+			DebugLog(n2);
+			*/
+
+			if (Date.now() - Date.parse(lastHeardTime) < 30000) {
+				if (ThermostatUI.GetOnline()) {
+					DebugLog("[Core Ping Successful] Core Already Online.", 2);
+				}
+				else {
+					DebugLog("[Core Ping Successful] Core Online.", 2);
+					ThermostatUI.SetOnline(true);
+					// #TODO: the gets happen async and the set thermostat 
+					//        is called before the get calls return
 					GetCurrentTemperature();
 					GetDesiredTemperature();
 					ThermostatUI.SetThermostatMode("current-temp");
 				}
-				firstSuccessfulConnectionFlag = false;
 			}
 			else {
-				DebugLog("[IsCoreOnlineSuccess] Core Offline.");
+				var temp = Date.now() - Date.parse(lastHeardTime);
+				DebugLog("[Core Ping Successful] Core Offline: " + temp, 2);
 				ThermostatUI.SetOnline(false);
 			}
 		}
 		else {
-			ErrorLog("[IsCoreOnlineSuccess] Data does not have last_heard.");
+			ErrorLog("[Core Ping Successful] Data does not have last_heard.");
 			console.log(response);
 		}
 	};
@@ -58,10 +71,10 @@ $(function () {
 			data: { access_token: SPARK_ACCESS_TOKEN },
 			dataType: 'json',
 			success: function(data){
-				IsCoreOnlineSuccess(data);
+				CorePingSuccessful(data);
 			},
 			error: function(){
-				ErrorLog("[IsCoreOnline] Api call failed.");
+				ErrorLog("[Is Core Online] Api call failed.");
 			}
 		});
 
@@ -77,10 +90,10 @@ $(function () {
 			success: function(data){
 				var temp = data.result;
 				ThermostatUI.SetCurrentTemp(temp);
-				console.log("Current temp: " + temp);
+				DebugLog("Current temp: " + temp, 2);
 			},
 			error: function(){
-				ErrorLog("[GetCurrentTemperature] Api call failed.");
+				ErrorLog("[Get Current Temperature] Api call failed.");
 			}
 		});
 
@@ -96,37 +109,13 @@ $(function () {
 			success: function(data){
 				var temp = data.result;
 				ThermostatUI.SetDesiredTemp(temp);
-				console.log("Desired temp: " + temp);
+				DebugLog("Desired temp: " + temp, 2);
 			},
 			error: function(){
-				ErrorLog("[GetDesiredTemperature] Api call failed.");
+				ErrorLog("[Get Desired Temperature] Api call failed.");
 			}
 		});
 
-	};
-
-	function getVariable(variable, callback) {
-		var url = baseURL + SPARK_CORE_ID + "/" + variable + "?access_token=" + SPARK_ACCESS_TOKEN;
-		$.getJSON(url, callback).fail(function(obj) {
-			onMethodFailure();
-		});
-	};
-
-
-	function doMethod(method, data) {
-		var url = baseURL + SPARK_CORE_ID + "/" + method;
-		$.ajax({
-			type: "POST",
-			url: url,
-			data: { access_token: SPARK_ACCESS_TOKEN, args: data },
-			success: onMethodSuccess,
-			dataType: "json"
-		}).fail(function(obj) {
-			onMethodFailure();
-		});
-	};
-
-
-	
+	};	
 
 });

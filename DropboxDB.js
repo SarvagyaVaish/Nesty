@@ -29,7 +29,7 @@ var DropboxDB = (function () {
 			// Retrieve Datastore and Table
 			if (client.isAuthenticated()) {
 
-				console.log("authentication successful...")
+				DebugLog("authentication successful...", 2);
 
 				client.getDatastoreManager().openOrCreateDatastore('nesty', function (error, datastore) { 
 					if (error) {
