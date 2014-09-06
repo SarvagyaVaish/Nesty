@@ -52,6 +52,49 @@ $(function () {
 	});
 
 
+	function SetNestyMode(mode) {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetMode';
+		$.ajax({
+			type: 'POST',
+			url: url,
+			data: { 
+				access_token: SPARK_ACCESS_TOKEN, 
+				args: mode
+			},
+			dataType: 'json',
+			success: function(data){
+				DebugLog('[Set Nesty Mode]: Successful');
+			},
+			error: function(){
+				ErrorLog('[Set Nesty Mode]: Failed');
+			}, 
+			timeout: 2000
+		});
+
+	};
+
+
+	function SetDesiredTemp(temp) {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetDesrTemp';
+		$.ajax({
+			type: 'POST',
+			url: url,
+			data: { 
+				access_token: SPARK_ACCESS_TOKEN, 
+				args: 'temp=' + temp
+			},
+			dataType: 'json',
+			success: function(data){
+				DebugLog('[Set Desired Temp]: Successful');
+			},
+			error: function(){
+				ErrorLog('[Set Desired Temp]: Failed');
+			}, 
+			timeout: 2000
+		});
+
+	};
+
 	function GetCurrentTemperature() {
 		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'CurrTemp' ;
 		$.ajax({
