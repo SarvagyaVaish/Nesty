@@ -4,6 +4,7 @@ var KNOB_MAX = 80;
 var ThermostatUI = (function () {
 
 	var m_Online = false;
+	var m_HvacState = false;
 	var m_CurrentTemp = null;
 	var m_DesiredTemp = null;
 
@@ -140,7 +141,8 @@ var ThermostatUI = (function () {
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
 			// Properties
-			'fgColor' 		: '#DFDFDF',  // Gray
+			'inputColor'	: '#999999',
+			'fgColor' 		: '#CCCCCC',  // Gray
 			'readOnly'		: true,
 			// Hooks
 			'release'		: NoOpHook,
@@ -154,7 +156,8 @@ var ThermostatUI = (function () {
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
 			// Properties
-			'fgColor' 		: '#DFDFDF',  // Gray
+			'inputColor'	: '#999999',
+			'fgColor' 		: '#CCCCCC',  // Gray
 			'readOnly'		: true,
 			// Hooks
 			'release'		: NoOpHook,
@@ -168,7 +171,8 @@ var ThermostatUI = (function () {
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
 			// Properties
-			'fgColor' 		: '#629042',  // Green
+			'inputColor'	: '#0AB22C',
+			'fgColor' 		: '#08D632',  // Green
 			'readOnly'		: true,
 			// Hooks
 			'release'		: NoOpHook,
@@ -182,7 +186,8 @@ var ThermostatUI = (function () {
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
 			// Properties
-			'fgColor' 		: '#007BBE',  // Blue
+			'inputColor'	: '#007BBE',
+			'fgColor' 		: '#00A4FC',  // Blue
 			'readOnly'		: false,
 			// Hooks
 			'release'		: ThermostatKnobReleaseHook,
@@ -197,8 +202,8 @@ var ThermostatUI = (function () {
 		'angleOffset'	: -125,
 		'angleArc'		: 250, 
 		'lineCap'		: 'round',
-		'fgColor' 		: '#66CC66',
-		'bgColor'		: '#629042',
+		'fgColor' 		: '#08D632',
+		'bgColor'		: '#FFFFFF',
 		'displayInput'	: false,
 		'readOnly'		: true
 	};
@@ -314,7 +319,6 @@ var ThermostatUI = (function () {
 			// Visualize
 			DebugLog("[Visualize Desired Temp] Setting thermostat knob to " + m_DesiredTemp, 2);
 			$("#thermostat-knob").val(m_DesiredTemp).trigger('change');
-
 		}, // VisualizeDesiredTemp
 
 
@@ -327,6 +331,18 @@ var ThermostatUI = (function () {
 		GetOnline: function() {
 			DebugLog("[Get Online]: " + m_Online, 3);
 			return m_Online;
+		},
+
+
+		SetHvacState: function(state) {
+			DebugLog("[Set Hvac State]: " + state, 3);
+			m_HvacState = state;
+		},
+
+
+		GetHvacState: function() {
+			DebugLog("[Get Hvac State]: " + state, 3);
+			return m_HvacState;
 		},
 
 
