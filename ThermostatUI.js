@@ -11,10 +11,12 @@ var ThermostatUI = (function () {
 
 	// Thermostat Knob
 	var ThermostatKnobModes = {
-		DisplayingCurrentTemp: 0,
-		DisplayingDesiredTemp: 1
+		Offline: 0,
+		HvacOff: 1,
+		CurrentTemp: 2,
+		DesiredTemp: 3
 	};
-	var m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
+	var m_ThermostatKnobMode = ThermostatKnobModes.Offline;
 
 	// Confirmation Knob
 	var ConfirmationKnobModes = {
@@ -130,27 +132,57 @@ var ThermostatUI = (function () {
 	};
 
 	var m_ThermostatKnobProperties = {
-		DisplayingCurrentTemp : {
-			// Properties
+		Offline : {
+			// Properties - unchanged
 			'min'			: KNOB_MIN,
 			'max'			: KNOB_MAX,
 			'angleOffset'	: -125,
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
-			'fgColor' 		: '#999999',
+			// Properties
+			'fgColor' 		: '#DFDFDF',  // Gray
 			'readOnly'		: true,
 			// Hooks
 			'release'		: NoOpHook,
 			'change'		: NoOpHook
 		},
-		DisplayingDesiredTemp : {
-			// Properties
+		HvacOff : {
+			// Properties - unchanged
 			'min'			: KNOB_MIN,
 			'max'			: KNOB_MAX,
 			'angleOffset'	: -125,
 			'angleArc'		: 250, 
 			'lineCap'		: 'round',
-			'fgColor' 		: '#5CD9F2',
+			// Properties
+			'fgColor' 		: '#DFDFDF',  // Gray
+			'readOnly'		: true,
+			// Hooks
+			'release'		: NoOpHook,
+			'change'		: NoOpHook
+		}, 
+		CurrentTemp : {
+			// Properties - unchanged
+			'min'			: KNOB_MIN,
+			'max'			: KNOB_MAX,
+			'angleOffset'	: -125,
+			'angleArc'		: 250, 
+			'lineCap'		: 'round',
+			// Properties
+			'fgColor' 		: '#629042',  // Green
+			'readOnly'		: true,
+			// Hooks
+			'release'		: NoOpHook,
+			'change'		: NoOpHook
+		},
+		DesiredTemp : {
+			// Properties - unchanged
+			'min'			: KNOB_MIN,
+			'max'			: KNOB_MAX,
+			'angleOffset'	: -125,
+			'angleArc'		: 250, 
+			'lineCap'		: 'round',
+			// Properties
+			'fgColor' 		: '#007BBE',  // Blue
 			'readOnly'		: false,
 			// Hooks
 			'release'		: ThermostatKnobReleaseHook,
@@ -166,7 +198,7 @@ var ThermostatUI = (function () {
 		'angleArc'		: 250, 
 		'lineCap'		: 'round',
 		'fgColor' 		: '#66CC66',
-		'bgColor'		: '#FFFFFF',
+		'bgColor'		: '#629042',
 		'displayInput'	: false,
 		'readOnly'		: true
 	};
@@ -174,9 +206,12 @@ var ThermostatUI = (function () {
 	var ResetConfirmationKnob = function(){
 		DebugLog("[Reset Confirmation Knob]", 3);
 
-		m_ConfirmationKnobValue = 0;
+		// Clear Confirmation Knob Interval Timer
 		clearInterval(m_ConfirmationIntervalId);
 		m_ConfirmationIntervalId = null;
+
+		// Set Confirmation Knob to 0
+		m_ConfirmationKnobValue = 0;
 		$("#confirmation-knob").val(m_ConfirmationKnobValue).trigger('change');
 	};
 
@@ -185,7 +220,7 @@ var ThermostatUI = (function () {
 		clearTimeout(m_DesiredTempTimeoutId);
 		m_DesiredTempTimeoutId = setTimeout(function(){
 			ResetConfirmationKnob();
-			ThermostatUI.SetThermostatMode('current-temp');
+			ThermostatUI.SetThermostatMode('CurrentTemp');
 		}, 5000);
 	};
 
@@ -194,24 +229,46 @@ var ThermostatUI = (function () {
 		Init: function () {
 			$("#thermostat-knob").knob(m_ThermostatKnobProperties.DisplayingCurrentTemp);
 			$("#confirmation-knob").knob(m_ConfirmationKnobProperties);
-			ThermostatUI.VisualizeDisabled();
+			ThermostatUI.VisualizeOffline();
 		}, // Init
 
 
-		VisualizeDisabled: function() {
-			DebugLog("[Visualize Disabled]", 3);
+		VisualizeOffline: function() {
+			DebugLog("[Visualize Offline]", 3);
 
-			// Reset the confirmation knob
-			ResetConfirmationKnob();
+			// Set Thermostat Knob mode
+			m_ThermostatKnobMode = ThermostatKnobModes.Offline;
 
-			// Disable the confirmation knob
-			m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
-
-			// Set values to minimum
+			// Style Thermostat Knob
+			$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.Offline);
+			
+			// Visualize
 			$("#thermostat-knob").val(KNOB_MIN).trigger('change');
 			$("#thermostat-knob").val('-');
-			$("#confirmation-knob").val(0).trigger('change');
-		}, // VisualizeDisabled
+		}, // VisualizeOffline
+
+
+		VisualizeHvacOff: function() {
+			if (!m_Online) {
+				DebugLog("[Visualize Hvac Off] Not Online. Cannot visualize.", 2);
+				return;
+			}
+
+			if (!m_CurrentTemp) {
+				DebugLog("[Visualize Hvac Off] Current Temp not set. Cannot visualize.", 2);
+				return;
+			}
+
+			// Set Thermostat Knob mode
+			m_ThermostatKnobMode = ThermostatKnobModes.HvacOff;
+
+			// Style Thermostat Knob
+			$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.HvacOff);
+			
+			// Visualize
+			DebugLog("[Visualize Hvac Off] Setting thermostat knob to " + m_CurrentTemp, 2);
+			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
+		}, // VisualizeHvacOff
 
 
 		VisualizeCurrentTemp: function () {
@@ -225,25 +282,36 @@ var ThermostatUI = (function () {
 				return;
 			}
 
-			// Display current temp
+			// Set Thermostat Knob mode
+			m_ThermostatKnobMode = ThermostatKnobModes.CurrentTemp;
+
+			// Style Thermostat Knob
+			$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.CurrentTemp);
+			
+			// Visualize
 			DebugLog("[Visualize Current Temp] Setting thermostat knob to " + m_CurrentTemp, 2);
 			$("#thermostat-knob").val(m_CurrentTemp).trigger('change');
-
 		}, // VisualizeCurrentTemp
 
 
 		VisualizeDesiredTemp: function () {
 			if (!m_Online) {
-				DebugLog("[VisualizeDesiredTemp] Not Online. Cannot visualize.", 2);
+				DebugLog("[Visualize Desired Temp] Not Online. Cannot visualize.", 2);
 				return;
 			}
 
 			if (!m_DesiredTemp) {
-				DebugLog("[VisualizeDesiredTemp] Desired Temp not set. Cannot visualize.", 2);
+				DebugLog("[Visualize Desired Temp] Desired Temp not set. Cannot visualize.", 2);
 				return;
 			}
 
-			// Display desired temp 
+			// Set Thermostat Knob mode
+			m_ThermostatKnobMode = ThermostatKnobModes.DesiredTemp;
+
+			// Style Thermostat Knob
+			$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DesiredTemp);
+			
+			// Visualize
 			DebugLog("[Visualize Desired Temp] Setting thermostat knob to " + m_DesiredTemp, 2);
 			$("#thermostat-knob").val(m_DesiredTemp).trigger('change');
 
@@ -275,35 +343,61 @@ var ThermostatUI = (function () {
 
 
 		// Set Thermostat Knob mode
+		//   - Offline
+		//   - HvacOff
+		//   - CurrentTemp
+		//   - DesiredTemp
 		SetThermostatMode: function(mode) {
 			DebugLog("[Set Thermostat Mode]: " + mode, 3);
 
-			if (mode == "current-temp") {
+			if (mode == 'Offline') {
 
-				// Reset the confirmation knob
+				// Reset the Confirmation Knob
 				ResetConfirmationKnob();
 
-				// Set modes
+				// Disable the Confirmation Knob
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
-				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingCurrentTemp;
 
-				// Init Thermostat Knob
-				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingCurrentTemp);
-				ThermostatUI.VisualizeCurrentTemp();
+				// Visualize
+				ThermostatUI.VisualizeOffline();
+
 			}
-			else if (mode == "desired-temp") {
 
-				// Reset the confirmation knob
+			else if (mode == 'HvacOff') {
+
+				// Reset the Confirmation Knob
 				ResetConfirmationKnob();
 
-				// Thermostat Knob mode
-				m_ThermostatKnobMode = ThermostatKnobModes.DisplayingDesiredTemp;
+				// Disable the Confirmation Knob
+				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 
-				// Init Thermostat Knob
-				$("#thermostat-knob").trigger('configure', m_ThermostatKnobProperties.DisplayingDesiredTemp);
+				// Visualize
+				ThermostatUI.VisualizeHvacOff();
+
+			}
+
+			else if (mode == "CurrentTemp") {
+
+				// Reset the Confirmation Knob
+				ResetConfirmationKnob();
+
+				// Disable the Confirmation Knob
+				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
+
+				// Visualize
+				ThermostatUI.VisualizeCurrentTemp();
+
+			}
+
+			else if (mode == "DesiredTemp") {
+
+				// Reset the Confirmation Knob
+				ResetConfirmationKnob();
+
+				// Visualize
 				ThermostatUI.VisualizeDesiredTemp();
 
-				// Confirmation Knob mode
+				// Enable the Confirmation Knob
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 
 				// Set up timer to display current temperature 
@@ -313,11 +407,17 @@ var ThermostatUI = (function () {
 
 
 		GetThermostatMode: function(mode) {
-			if (m_ThermostatKnobMode == ThermostatKnobModes.DisplayingCurrentTemp) {
-				return 'current-temp';
+			if (m_ThermostatKnobMode == ThermostatKnobModes.Offline) {
+				return 'Offline';
 			}
-			if (m_ThermostatKnobMode == ThermostatKnobModes.DisplayingDesiredTemp) {
-				return 'desired-temp';
+			if (m_ThermostatKnobMode == ThermostatKnobModes.HvacOff) {
+				return 'HvacOff';
+			}
+			if (m_ThermostatKnobMode == ThermostatKnobModes.CurrentTemp) {
+				return 'CurrentTemp';
+			}
+			if (m_ThermostatKnobMode == ThermostatKnobModes.DesiredTemp) {
+				return 'DesiredTemp';
 			}
 		}
 

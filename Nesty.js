@@ -19,8 +19,15 @@ $(function () {
 	mc.add( new Hammer.Tap({ event: 'singletap' }) );
 	mc.get('doubletap').recognizeWith('singletap');
 	mc.get('singletap').requireFailure('doubletap');
-	mc.on("singletap doubletap", function(ev) {
-	    console.log(ev.type + " ");
+
+	// Handle single taps
+	mc.on("singletap", function(ev) {
+		console.log(ev.type + " ");
+	});
+
+	// Handle double taps
+	mc.on("doubletap", function(ev) {
+		console.log(ev.type + " ");
 	});
 
 	function GetCurrentTemperature() {
