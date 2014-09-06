@@ -12,6 +12,7 @@ $(function () {
 	GetCurrentTemperature();
 	setInterval(GetCurrentTemperature, 5000);
 
+
 	// HAMMER.JS
 	var tapArea = document.getElementById('tap-area');
 	var mc = new Hammer.Manager(tapArea);
@@ -22,13 +23,34 @@ $(function () {
 
 	// Handle single taps
 	mc.on("singletap", function(ev) {
-		console.log(ev.type + " ");
+		DebugLog("[Tap]: " + ev.type, 2);
+
+		// Display desired temp knob if displaying current temp. Ignore otherwise
+		if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+			ThermostatUI.SetThermostatMode('DesiredTemp');
+		}
+		else {
+			DebugLog("[Tap]: " + "Ignored", 2);
+		}
 	});
+
 
 	// Handle double taps
 	mc.on("doubletap", function(ev) {
-		console.log(ev.type + " ");
+		DebugLog("[Tap]: " + ev.type, 2);
+
+		// Toggle Hvac on / off
+		if (ThermostatUI.GetThermostatMode() == 'HvacOff') {
+			ThermostatUI.SetThermostatMode('CurrentTemp');
+		}
+		else if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+			ThermostatUI.SetThermostatMode('HvacOff');
+		}
+		else {
+			DebugLog("[Tap]: " + "Ignored", 2);
+		}
 	});
+
 
 	function GetCurrentTemperature() {
 		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'CurrTemp' ;
@@ -43,15 +65,20 @@ $(function () {
 				if (ThermostatUI.GetOnline() == false) {
 					ThermostatUI.SetOnline(true);
 					ThermostatUI.SetCurrentTemp(temp);
-					ThermostatUI.SetThermostatMode('current-temp');
+					ThermostatUI.SetThermostatMode('CurrentTemp');
+					GetDesiredTemperature();
 				}
 				else {
 					ThermostatUI.SetCurrentTemp(temp);
+					// Hack - call set thermostat mode again to display correct temp
+					if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+						ThermostatUI.SetThermostatMode('CurrentTemp');
+					}
 				}
 			},
 			error: function(){
 				ThermostatUI.SetOnline(false);
-				ThermostatUI.VisualizeDisabled();
+				ThermostatUI.SetThermostatMode('Offline');
 				ErrorLog("[Get Current Temperature] Api call failed. Core Offline.");
 			}, 
 			timeout: 2000
