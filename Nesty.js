@@ -51,50 +51,6 @@ $(function () {
 		}
 	});
 
-
-	function SetNestyMode(mode) {
-		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetMode';
-		$.ajax({
-			type: 'POST',
-			url: url,
-			data: { 
-				access_token: SPARK_ACCESS_TOKEN, 
-				args: mode
-			},
-			dataType: 'json',
-			success: function(data){
-				DebugLog('[Set Nesty Mode]: Successful');
-			},
-			error: function(){
-				ErrorLog('[Set Nesty Mode]: Failed');
-			}, 
-			timeout: 2000
-		});
-
-	};
-
-
-	function SetDesiredTemp(temp) {
-		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetDesrTemp';
-		$.ajax({
-			type: 'POST',
-			url: url,
-			data: { 
-				access_token: SPARK_ACCESS_TOKEN, 
-				args: 'temp=' + temp
-			},
-			dataType: 'json',
-			success: function(data){
-				DebugLog('[Set Desired Temp]: Successful');
-			},
-			error: function(){
-				ErrorLog('[Set Desired Temp]: Failed');
-			}, 
-			timeout: 2000
-		});
-
-	};
-
 	function GetCurrentTemperature() {
 		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'CurrTemp' ;
 		$.ajax({
@@ -145,7 +101,68 @@ $(function () {
 				ErrorLog("[Get Desired Temperature] Api call failed.");
 			}
 		});
+	};
 
-	};	
+
+	// Event that can be triggered to set nestry mode
+	$('#tap-area').on('SetNestyMode', function(e, args){
+		DebugLog('[SetNestyMode Event]: Triggered. Args.mode: ' + args.mode, 2);
+		SetNestyMode(args.mode);
+	});
+
+	// Example
+	// $('#tap-area').trigger('SetNestyMode', { mode: "cool" });
+
+	function SetNestyMode(mode) {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetMode';
+		$.ajax({
+			type: 'POST',
+			url: url,
+			data: { 
+				access_token: SPARK_ACCESS_TOKEN, 
+				args: mode
+			},
+			dataType: 'json',
+			success: function(data){
+				DebugLog('[Set Nesty Mode]: Successful');
+			},
+			error: function(){
+				ErrorLog('[Set Nesty Mode]: Failed');
+			}, 
+			timeout: 2000
+		});
+
+	};
+
+
+	// Event that can be triggered to set desired temp
+	$('#tap-area').on('SetDesiredTemp', function(e, args){
+		DebugLog('[Set Desired Temp Event]: Triggered. Args.temp: ' + args.temp, 2);
+		SetDesiredTemp(args.temp);
+	});
+
+	// Example
+	// $('#tap-area').trigger('SetDesiredTemp', { temp: "70" });
+
+	function SetDesiredTemp(temp) {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'SetDesrTemp';
+		$.ajax({
+			type: 'POST',
+			url: url,
+			data: { 
+				access_token: SPARK_ACCESS_TOKEN, 
+				args: 'temp=' + temp
+			},
+			dataType: 'json',
+			success: function(data){
+				DebugLog('[Set Desired Temp]: Successful');
+			},
+			error: function(){
+				ErrorLog('[Set Desired Temp]: Failed');
+			}, 
+			timeout: 2000
+		});
+
+	};
 
 });
