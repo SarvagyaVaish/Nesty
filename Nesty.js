@@ -43,12 +43,12 @@ $(function () {
 		if (ThermostatUI.GetThermostatMode() == 'HvacOff') {
 			$('#tap-area').trigger('SetNestyMode', { mode: "cool" });
 			// todo - check if mode change was successful before setting mode
-			ThermostatUI.SetThermostatMode('CurrentTemp');
+			//ThermostatUI.SetThermostatMode('CurrentTemp');
 		}
 		else if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
 			$('#tap-area').trigger('SetNestyMode', { mode: "off" });
 			// todo - check if mode change was successful before setting mode
-			ThermostatUI.SetThermostatMode('HvacOff');
+			//ThermostatUI.SetThermostatMode('HvacOff');
 		}
 		else {
 			DebugLog("[Tap]: " + "Ignored", 2);
@@ -139,9 +139,12 @@ $(function () {
 			dataType: 'json',
 			success: function(data){
 				DebugLog('[Set Nesty Mode]: Successful');
+				// todo - ui should display some kind of waiting operation while the SetNestyMode is happening
+				GetCurrentState();
 			},
 			error: function(){
 				ErrorLog('[Set Nesty Mode]: Failed');
+				// todo - ui should display some kind of error if this fails
 			}, 
 			timeout: 2000
 		});
@@ -173,6 +176,7 @@ $(function () {
 			},
 			error: function(){
 				ErrorLog('[Set Desired Temp]: Failed');
+				// todo - ui should display some kind of error if this fails
 			}, 
 			timeout: 2000
 		});
