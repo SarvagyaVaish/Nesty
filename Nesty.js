@@ -13,16 +13,17 @@ $(function () {
 	setInterval(GetCurrentState, 5000);
 
 
+
 	// HAMMER.JS
+	var debugArea = document.getElementById('debug-area');
 	var tapArea = document.getElementById('tap-area');
-	var mc = new Hammer.Manager(tapArea);
-	mc.add( new Hammer.Tap({ event: 'doubletap', taps: 2 }) );
-	mc.add( new Hammer.Tap({ event: 'singletap' }) );
-	mc.get('doubletap').recognizeWith('singletap');
-	mc.get('singletap').requireFailure('doubletap');
+	var mc = new Hammer(tapArea);
 
 	// Handle single taps
-	mc.on("singletap", function(ev) {
+	mc.on("tap", function(ev) {
+		debugArea.textContent = ev.type + " gesture detected.";
+		setTimeout(function(){ debugArea.textContent = ""; }, 1000);
+
 		DebugLog("[Tap]: " + ev.type, 2);
 
 		// Display desired temp knob if displaying current temp. Ignore otherwise
@@ -34,9 +35,11 @@ $(function () {
 		}
 	});
 
-
 	// Handle double taps
-	mc.on("doubletap", function(ev) {
+	mc.on("press", function(ev) {
+		debugArea.textContent = ev.type + " gesture detected.";
+		setTimeout(function(){ debugArea.textContent = ""; }, 1000);
+		
 		DebugLog("[Tap]: " + ev.type, 2);
 
 		// Toggle Hvac on / off
@@ -54,6 +57,8 @@ $(function () {
 			DebugLog("[Tap]: " + "Ignored", 2);
 		}
 	});
+
+
 
 	function GetCurrentState() {
 		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'StateStr' ;
