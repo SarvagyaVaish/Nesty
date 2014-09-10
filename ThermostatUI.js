@@ -3,8 +3,7 @@ var KNOB_MAX = 80;
 
 var ThermostatUI = (function () {
 
-	var m_Online = false;
-	var m_HvacState = false;
+	var m_HvacState = 'Unknown';	// Unknown, Off, Cool, Heat
 	var m_CurrentTemp = null;
 	var m_DesiredTemp = null;
 
@@ -27,6 +26,7 @@ var ThermostatUI = (function () {
 	};
 	var m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 	var m_ConfirmationTime = 2000.0; // msec
+	var m_NewDesiredTemp = null;
 	var m_ConfirmationKnobValue = null;
 	var m_ConfirmationIntervalId = null;
 
@@ -40,6 +40,9 @@ var ThermostatUI = (function () {
 		
 		m_ConfirmationKnobMode = ConfirmationKnobModes.Ready;
 		ResetConfirmationKnob();
+
+		// Send set desired temp command
+		$('#tap-area').trigger('SetDesiredTemp', { temp: m_NewDesiredTemp });
 	};
 
 	var InterruptConfirmation = function() {
@@ -114,16 +117,18 @@ var ThermostatUI = (function () {
 		// No op
 	};
 
-	var ThermostatKnobReleaseHook = function(){
-		DebugLog("[Thermostat Knob Release Hook]", 3);
+	var ThermostatKnobReleaseHook = function(value){
+		DebugLog("[Thermostat Knob Release Hook] Value: " + value, 3);
 
 		ResetDisplayingDesiredTempTimeout();
+
+		m_NewDesiredTemp = value;
 
 		StartConfirmation();
 	};
 
-	var ThermostatKnobChangeHook = function(){
-		DebugLog("[Thermostat Knob Change Hook]", 3);
+	var ThermostatKnobChangeHook = function(value){
+		DebugLog("[Thermostat Knob Change Hook] Value: " + value, 3);
 
 		ResetDisplayingDesiredTempTimeout();
 		
@@ -229,6 +234,11 @@ var ThermostatUI = (function () {
 		}, 5000);
 	};
 
+	var CancelDisplayingDesiredTempTimeout = function(){
+		DebugLog("[Cancel Displaying Desired Temp Timeout]", 3);
+		clearTimeout(m_DesiredTempTimeoutId);
+	};
+
 	return {
 		// Initialize a knob in disabled state
 		Init: function () {
@@ -254,7 +264,7 @@ var ThermostatUI = (function () {
 
 
 		VisualizeHvacOff: function() {
-			if (!m_Online) {
+			if (m_HvacState == "Unknown") {
 				DebugLog("[Visualize Hvac Off] Not Online. Cannot visualize.", 2);
 				return;
 			}
@@ -277,7 +287,7 @@ var ThermostatUI = (function () {
 
 
 		VisualizeCurrentTemp: function () {
-			if (!m_Online) {
+			if (m_HvacState == "Unknown") {
 				DebugLog("[Visualize Current Temp] Not Online. Cannot visualize.", 2);
 				return;
 			}
@@ -300,7 +310,7 @@ var ThermostatUI = (function () {
 
 
 		VisualizeDesiredTemp: function () {
-			if (!m_Online) {
+			if (m_HvacState == "Unknown") {
 				DebugLog("[Visualize Desired Temp] Not Online. Cannot visualize.", 2);
 				return;
 			}
@@ -322,18 +332,6 @@ var ThermostatUI = (function () {
 		}, // VisualizeDesiredTemp
 
 
-		SetOnline: function(online) {
-			DebugLog("[Set Online]: " + online, 3);
-			m_Online = online;
-		},
-
-
-		GetOnline: function() {
-			DebugLog("[Get Online]: " + m_Online, 3);
-			return m_Online;
-		},
-
-
 		SetHvacState: function(state) {
 			DebugLog("[Set Hvac State]: " + state, 3);
 			m_HvacState = state;
@@ -341,7 +339,7 @@ var ThermostatUI = (function () {
 
 
 		GetHvacState: function() {
-			DebugLog("[Get Hvac State]: " + state, 3);
+			DebugLog("[Get Hvac State]: " + m_HvacState, 3);
 			return m_HvacState;
 		},
 
@@ -374,6 +372,9 @@ var ThermostatUI = (function () {
 				// Disable the Confirmation Knob
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 
+				// Cancel Display Desired Temp Timeout to prevent mode hijacking
+				CancelDisplayingDesiredTempTimeout();
+
 				// Visualize
 				ThermostatUI.VisualizeOffline();
 
@@ -387,6 +388,9 @@ var ThermostatUI = (function () {
 				// Disable the Confirmation Knob
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
 
+				// Cancel Display Desired Temp Timeout to prevent mode hijacking
+				CancelDisplayingDesiredTempTimeout();
+
 				// Visualize
 				ThermostatUI.VisualizeHvacOff();
 
@@ -399,6 +403,9 @@ var ThermostatUI = (function () {
 
 				// Disable the Confirmation Knob
 				m_ConfirmationKnobMode = ConfirmationKnobModes.Disabled;
+
+				// Cancel Display Desired Temp Timeout to prevent mode hijacking
+				CancelDisplayingDesiredTempTimeout();
 
 				// Visualize
 				ThermostatUI.VisualizeCurrentTemp();

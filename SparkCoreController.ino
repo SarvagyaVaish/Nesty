@@ -7,6 +7,7 @@ int Mode = 0;
 int FanState = 0;
 int CoolState = 0;
 int HeatState = 0;
+char StateStr[512];
 
 int Hvac_G = D7;
 int Hvac_Y = D6;
@@ -20,8 +21,9 @@ void setup()
     
     Spark.variable("CurrTemp", &CurrTemp, DOUBLE);
     Spark.variable("DesrTemp", &DesrTemp, DOUBLE);
-    Spark.variable("FanState", &FanState, INT);
-    Spark.variable("CoolState", &CoolState, INT);
+    Spark.variable("StateStr", &StateStr, STRING);
+    //Spark.variable("FanState", &FanState, INT);
+    //Spark.variable("CoolState", &CoolState, INT);
     
     Spark.function("SetDesrTemp", SetDesrTemp);
     Spark.function("SetMode", SetMode);
@@ -125,6 +127,18 @@ void loop()
         CurrTemp *= 1.001;
         CurrTemp = min(CurrTemp, 80);
     }
+    
+    char *modeStr;
+    if (Mode == 0) {
+        modeStr = "Off";
+    }
+    else if (Mode == 1) {
+        modeStr = "Cool";
+    }
+    else if (Mode == 2) {
+        modeStr = "Heat";
+    }
+    sprintf(StateStr, "{\"CurrTemp\":%f,\"DesrTemp\":%f,\"Mode\":\"%s\"}", CurrTemp, DesrTemp, modeStr);
     
     delay(5000);
 }

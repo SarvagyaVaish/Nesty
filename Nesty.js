@@ -9,8 +9,8 @@ $(function () {
 	DropboxDB.Init();
 
 	// Set up ping to spark core (every 5 seconds)
-	GetCurrentTemperature();
-	setInterval(GetCurrentTemperature, 5000);
+	GetCurrentState();
+	setInterval(GetCurrentState, 5000);
 
 
 	// HAMMER.JS
@@ -41,9 +41,13 @@ $(function () {
 
 		// Toggle Hvac on / off
 		if (ThermostatUI.GetThermostatMode() == 'HvacOff') {
+			$('#tap-area').trigger('SetNestyMode', { mode: "cool" });
+			// todo - check if mode change was successful before setting mode
 			ThermostatUI.SetThermostatMode('CurrentTemp');
 		}
 		else if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+			$('#tap-area').trigger('SetNestyMode', { mode: "off" });
+			// todo - check if mode change was successful before setting mode
 			ThermostatUI.SetThermostatMode('HvacOff');
 		}
 		else {
@@ -51,55 +55,65 @@ $(function () {
 		}
 	});
 
-	function GetCurrentTemperature() {
-		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'CurrTemp' ;
+	function GetCurrentState() {
+		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'StateStr' ;
 		$.ajax({
 			type: 'GET',
 			url: url,
 			data: { access_token: SPARK_ACCESS_TOKEN },
 			dataType: 'json',
 			success: function(data){
-				var temp = data.result;
-				DebugLog("Current temp: " + temp, 2);
-				if (ThermostatUI.GetOnline() == false) {
-					ThermostatUI.SetOnline(true);
-					ThermostatUI.SetCurrentTemp(temp);
-					ThermostatUI.SetThermostatMode('CurrentTemp');
-					GetDesiredTemperature();
-				}
-				else {
-					ThermostatUI.SetCurrentTemp(temp);
-					// Hack - call set thermostat mode again to display correct temp
-					if (ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+				// success implies thermostat is connected and online
+
+				var state = JSON.parse(data.result);
+				DebugLog("Current State: " + JSON.stringify(state), 1);
+				
+				var previousHvacState = ThermostatUI.GetHvacState();
+
+				// Update UI Variables
+				ThermostatUI.SetCurrentTemp(state.CurrTemp);
+				ThermostatUI.SetDesiredTemp(state.DesrTemp);
+				ThermostatUI.SetHvacState(state.Mode);
+
+				// If thermostat was offline
+				if (previousHvacState == "Unknown") {
+					// Hvac: Off
+					if (ThermostatUI.GetHvacState() == 'Off') {
+						ThermostatUI.SetThermostatMode('HvacOff');
+					}
+					// Hvac: Cool / Hvac: Heat
+					else {
 						ThermostatUI.SetThermostatMode('CurrentTemp');
+					}
+				}
+
+				// If thermostat was already online
+				else {
+					// Hvac: Off
+					if (ThermostatUI.GetHvacState() == 'Off') {
+						ThermostatUI.SetThermostatMode('HvacOff');
+					}
+					// Hvac: Cool / Hvac: Heat
+					else {
+						if (ThermostatUI.GetThermostatMode() == 'HvacOff' || ThermostatUI.GetThermostatMode() == 'CurrentTemp') {
+							ThermostatUI.SetThermostatMode('CurrentTemp');
+						}
 					}
 				}
 			},
 			error: function(){
-				ThermostatUI.SetOnline(false);
+
+				// Update UI Variables
+				ThermostatUI.SetCurrentTemp(null);
+				ThermostatUI.SetDesiredTemp(null);
+				ThermostatUI.SetHvacState("Unknown");
+
+				// Update visualization
 				ThermostatUI.SetThermostatMode('Offline');
+
 				ErrorLog("[Get Current Temperature] Api call failed. Core Offline.");
 			}, 
 			timeout: 2000
-		});
-
-	};
-
-	function GetDesiredTemperature() {
-		var url = SparkBaseUrl + '/' + SPARK_CORE_ID + '/' + 'DesrTemp' ;
-		$.ajax({
-			type: 'GET',
-			url: url,
-			data: { access_token: SPARK_ACCESS_TOKEN },
-			dataType: 'json',
-			success: function(data){
-				var temp = data.result;
-				ThermostatUI.SetDesiredTemp(temp);
-				DebugLog("Desired temp: " + temp, 2);
-			},
-			error: function(){
-				ErrorLog("[Get Desired Temperature] Api call failed.");
-			}
 		});
 	};
 
