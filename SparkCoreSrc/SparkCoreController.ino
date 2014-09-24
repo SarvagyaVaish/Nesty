@@ -1,7 +1,4 @@
-// This #include statement was automatically added by the Spark IDE.
 #include "OneWire.h"
-
-// This #include statement was automatically added by the Spark IDE.
 #include "DS18B20.h"
 
 double CurrTemp = 72.0;
@@ -18,6 +15,8 @@ char StateStr[512];
 int Hvac_G = D7;
 int Hvac_Y = D6;
 int Hvac_O = D5;
+
+DS18B20 ds18b20 = DS18B20(D0);
 
 void setup()
 {
@@ -37,6 +36,14 @@ void setup()
 
 void loop()
 {
+    if (!ds18b20.search()) {
+        ds18b20.resetsearch();
+        delay(250);
+        return;       
+    }
+    
+    double CurrTemp = ds18b20.convertToFahrenheit(ds18b20.getTemperature());
+    
     int newFanState = 0;
     int newCoolState = 0;
     int newHeatState = 0;
@@ -125,6 +132,7 @@ void loop()
     }
     
     // Simulator
+    /*
     if ( CoolState == 1 ) {
         CurrTemp *= 0.999;
         CurrTemp = max(CurrTemp, 65);
@@ -133,6 +141,7 @@ void loop()
         CurrTemp *= 1.001;
         CurrTemp = min(CurrTemp, 80);
     }
+    */
     
     char *modeStr;
     if (Mode == 0) {
@@ -146,7 +155,7 @@ void loop()
     }
     sprintf(StateStr, "{\"CurrTemp\":%f,\"DesrTemp\":%f,\"Mode\":\"%s\"}", CurrTemp, DesrTemp, modeStr);
     
-    delay(5000);
+    delay(10000);
 }
 
 int SetDesrTemp(String command) 
