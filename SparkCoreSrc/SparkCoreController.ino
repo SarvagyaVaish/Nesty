@@ -1,3 +1,9 @@
+// This #include statement was automatically added by the Spark IDE.
+#include "OneWire.h"
+
+// This #include statement was automatically added by the Spark IDE.
+#include "DS18B20.h"
+
 double CurrTemp = 72.0;
 double DesrTemp = 72.0;
 int Mode = 0; 
