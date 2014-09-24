@@ -62,8 +62,8 @@ var DropboxDB = (function () {
 
 		InsertThermostatCommands: function( hvacState, desiredTemp ) {
 			// Validate
-			if (["OFF", "COOL", "HEAT"].indexOf(hvacState) == -1) {
-				console.log("hvacState (" + hvacState + ") is not one of [OFF, COOL, HEAT]");
+			if (["off", "cool", "heat"].indexOf(hvacState) == -1) {
+				console.log("hvacState (" + hvacState + ") is not one of [off, cool, heat]");
 				return;
 			}
 

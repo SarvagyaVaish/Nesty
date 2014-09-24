@@ -2,11 +2,11 @@ var SparkBaseUrl = "https://api.spark.io/v1/devices";
 
 $(function () {
 
-	// Initialize Thermostat UI
-	ThermostatUI.Init();
-
 	// Initialize Dropbox Datastore
 	DropboxDB.Init();
+
+	// Initialize Thermostat UI
+	ThermostatUI.Init();
 
 	// Set up ping to spark core (every 5 seconds)
 	GetCurrentState();
@@ -144,6 +144,7 @@ $(function () {
 			dataType: 'json',
 			success: function(data){
 				DebugLog('[Set Nesty Mode]: Successful');
+				DropboxDB.InsertThermostatCommands(mode, 'NA');
 				// todo - ui should display some kind of waiting operation while the SetNestyMode is happening
 				GetCurrentState();
 			},
@@ -178,6 +179,7 @@ $(function () {
 			dataType: 'json',
 			success: function(data){
 				DebugLog('[Set Desired Temp]: Successful');
+				DropboxDB.InsertThermostatCommands('cool', temp);
 			},
 			error: function(){
 				ErrorLog('[Set Desired Temp]: Failed');
