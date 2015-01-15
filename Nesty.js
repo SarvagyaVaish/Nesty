@@ -2,6 +2,12 @@ var SparkBaseUrl = "https://api.spark.io/v1/devices";
 
 $(function () {
 
+	// Decrypt DROPBOX_APP_KEY, DROPBOX_ACCESS_TOKEN, SPARK_CORE_ID, SPARK_ACCESS_TOKEN
+	do {
+		passphrase = window.prompt("Password","");
+	} while(!DecryptKeysAndTokens(passphrase));
+	
+
 	// Initialize Dropbox Datastore
 	DropboxDB.Init();
 
@@ -11,8 +17,6 @@ $(function () {
 	// Set up ping to spark core (every 5 seconds)
 	GetCurrentState();
 	setInterval(GetCurrentState, 5000);
-
-
 
 	// HAMMER.JS
 	var debugArea = document.getElementById('debug-area');
