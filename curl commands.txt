@@ -1,0 +1,17 @@
+// List of devices
+curl https://api.spark.io/v1/devices?access_token=<?>
+
+// Status of particular core
+curl https://api.spark.io/v1/devices/<?>?access_token=<?>
+
+// Set desired temperature
+curl https://api.spark.io/v1/devices/<?>/SetDesrTemp -d access_token=<?> -d "args=temp=75"
+
+// Set Mode
+curl https://api.spark.io/v1/devices/<?>/SetMode -d access_token=<?> -d "args=cool"
+
+// Get desired temperature
+curl https://api.spark.io/v1/devices/<?>/DesrTemp -d access_token=<?> -G
+
+// Get current temperature
+curl https://api.spark.io/v1/devices/<?>/CurrTemp -d access_token=<?> -G
